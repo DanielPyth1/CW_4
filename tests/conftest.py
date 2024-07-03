@@ -1,5 +1,6 @@
 import pytest
 
+from src.api import HhAPI
 from src.vacancy import Vacancy
 
 
