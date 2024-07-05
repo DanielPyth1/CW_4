@@ -12,10 +12,10 @@ class Vacancy:
         return self.__pk
 
     def __str__(self) -> str:
-        return f"Vacancy: {self.__name}, Salary: {self.__salary_from} - {self.__salary_to}"
+        return f"Вакансия: {self.__name}, Зарплата: {self.__salary_from} - {self.__salary_to}"
 
     def __repr__(self) -> str:
-        return f"Vacancy: {self.__name}, Salary: {self.__salary_from} - {self.__salary_to}"
+        return f"Вакансия: {self.__name}, Зарплата: {self.__salary_from} - {self.__salary_to}"
 
     @staticmethod
     def __validate_salary(salary: int) -> int:
@@ -43,11 +43,23 @@ class Vacancy:
         result = {}
         items = data.split(',')
         for item in items:
-            key, value = item.split('=')
-            if key.strip() in {"salary_from", "salary_to", "pk"}:
-                result[key.strip()] = int(value.strip())
+            if '=' in item:
+                key, value = item.split('=')
+                key = key.strip()
+                value = value.strip()
+                if key in {"salary_from", "salary_to", "pk"}:
+                    try:
+                        result[key] = int(value)
+                    except ValueError:
+                        raise ValueError(f"Некорректное значение для {key}: {value}")
+                else:
+                    result[key] = value
             else:
-                result[key.strip()] = value.strip()
+                raise ValueError(f"Неверный формат для элемента: {item}")
+        required_fields = {"pk", "name", "salary_from", "salary_to"}
+        if not required_fields.issubset(result):
+            missing = required_fields - result.keys()
+            raise ValueError(f"Отсутствуют необходимые поля: {', '.join(missing)}")
         return result
 
     def to_dict(self) -> dict:
@@ -56,3 +68,4 @@ class Vacancy:
             "salary_from": self.__salary_from,
             "salary_to": self.__salary_to,
         }
+
