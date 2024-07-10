@@ -1,92 +1,41 @@
 from abc import ABC, abstractmethod
-
 import requests
-from requests import Response, JSONDecodeError
-
-from config import HH_URL
-from src.exceptions import HhAPIException
+from data.config import HH_VACANCIES_URL, HH_HEADERS, SJ_VACANCIES_URL, SJ_HEADERS, COUNT_SJ, COUNT_HH
 
 
 class API(ABC):
-    """
-    Абстрактный класс для подключения и получения данных с API ресурса
-    """
-
-    @property
-    @abstractmethod
-    def url(self) -> str:
-        """
-
-        :return:
-        """
-        raise NotImplementedError()
+    """Родительский класс для работы с АПИ"""
 
     @abstractmethod
-    def get_response_data(self) -> list[dict]:
-        """
-
-            :return:
-            """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _get_response(self) -> Response:
-        """
-
-        :return:
-        """
-        raise NotImplementedError()
-
-    @staticmethod
-    @abstractmethod
-    def _check_status(response: Response) -> bool:
-        """
-
-        :return:
-        """
-        raise NotImplementedError()
+    def get_response(self):
+        pass
 
 
-class HhAPI(API):
+class HH(API):
+    """Класс для поиска вакансий на сайте HH.ru по названию"""
 
-    def __init__(self) -> None:
-        self.__text = None
-        self.__params = {
-            "per_page": 100,
-            "search_field": "name"
-        }
+    def __init__(self, user_search: str) -> None:
+        self.__url = HH_VACANCIES_URL
+        self.__headers = HH_HEADERS
+        self.params = {"text": user_search, "per_page": COUNT_HH, 'page': 0, "archived": False}
 
-    @property
-    def url(self) -> str:
-        return HH_URL
+    def get_response(self):
+        """Принимает текст для поиска и выдает список найденных вакансий в формате Json"""
 
-    @property
-    def text(self) -> str:
-        return self.__text
+        self.response = requests.get(url=self.__url, headers=self.__headers,
+                                     params=self.params)
+        return self.response.json()
 
-    @text.setter
-    def text(self, text: str) -> None:
-        if not text:
-            raise HhAPIException("Поисковый запрос не задан")
-        self.__text = text
 
-    def _get_response(self) -> Response:
-        if self.__text is None:
-            raise HhAPIException("Поисковый запрос не задан")
-        self.__params["text"] = self.__text
-        return requests.get(self.url, params=self.__params)
+class SJ(API):
+    """Класс для поиска вакансий на сайте SJ.ru"""
 
-    def get_response_data(self) -> list[dict]:
-        response = self._get_response()
-        is_allowed = self._check_status(response)
-        if not is_allowed:
-            raise HhAPIException(f"Ошибка запроса данных status_code: {response.status_code}, response:{response.text}")
-        try:
-            return response.json()
-        except JSONDecodeError:
-            raise HhAPIException(f"Ошибка получения данных, получен не json объект response:{response.text}")
+    def __init__(self, user_search: str) -> None:
+        self.__url = SJ_VACANCIES_URL
+        self.__headers = SJ_HEADERS
+        self.params = {"count": COUNT_SJ, "keyword": user_search, "archive": False}
 
-    @staticmethod
-    def _check_status(response: Response) -> bool:
-        return response.status_code == 200
-
+    def get_response(self):
+        """Принимает текст для поиска и выдает список найденных вакансий в формате Json"""
+        self.response = requests.get(url=self.__url, headers=self.__headers, params=self.params)
+        return self.response.json()
